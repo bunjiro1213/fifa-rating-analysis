@@ -15,36 +15,6 @@ from xgboost import XGBRegressor
 BASE_DIR = Path(__file__).resolve().parents[1]
 DATA_PATH = BASE_DIR / "datasets" / "cleaned.csv"
 SCORED_PATH = BASE_DIR / "datasets" / "scored_players.csv"
-METRICS_PATH = BASE_DIR / "datasets" / "model_metrics.csv"
-
-
-def add_segments(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df["Age_Bucket"] = pd.cut(
-        df["Age"],
-        bins=[0, 20, 23, 27, 31, 100],
-        labels=["<=20", "21-23", "24-27", "28-31", "32+"],
-        right=True,
-    )
-
-    def to_position_group(pos: str) -> str:
-        if not isinstance(pos, str):
-            return "Other"
-        if "GK" in pos:
-            return "Goalkeeper"
-        if any(token in pos for token in ["CB", "RB", "LB", "RWB", "LWB"]):
-            return "Defense"
-        if any(token in pos for token in ["DM", "CM", "AM", "RM", "LM"]):
-            return "Midfield"
-        if any(token in pos for token in ["ST", "CF", "LW", "RW", "F", "S"]):
-            return "Attack"
-        return "Other"
-
-    df["Position_Group"] = df["Position"].apply(to_position_group)
-
-    top_clubs = set(df["Club"].value_counts().head(15).index)
-    df["Club_Group"] = df["Club"].where(df["Club"].isin(top_clubs), "Other")
-    return df
 
 
 def enforce_numeric_types(scored: pd.DataFrame) -> pd.DataFrame:
@@ -149,30 +119,12 @@ def evaluate_and_score() -> None:
     scored = df[["ID", "Name", "Nationality", "Club", "Position", "Age", "Overall"]].copy()
     scored["Predicted_Overall"] = pd.Series(full_preds).round(2).astype(float)
     scored["Residual"] = (scored["Overall"].astype(float) - scored["Predicted_Overall"]).round(2)
-    scored = add_segments(scored)
     scored = enforce_numeric_types(scored)
 
     scored.to_csv(SCORED_PATH, index=False)
 
-    metrics = pd.DataFrame(
-        [
-            {
-                "model": "xgboost_regressor_grid",
-                "rmse": rmse,
-                "mae": mae,
-                "r2": r2,
-                "train_rows": len(y_train),
-                "test_rows": len(y_test),
-                "best_params": grid.best_params_,
-                "best_cv_rmse": float((-grid.best_score_) ** 0.5),
-            }
-        ]
-    )
-    metrics.to_csv(METRICS_PATH, index=False)
-
     print(
         f"Saved scores -> {SCORED_PATH}\n"
-        f"Saved metrics -> {METRICS_PATH}\n"
         f"RMSE={rmse:.3f}, MAE={mae:.3f}, R2={r2:.3f}"
     )
 
