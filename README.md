@@ -26,6 +26,7 @@ The final model results are shown in a Power BI dashboard, which is exported as 
 - A table of **players with the largest over- and under-predictions**
 
 The dashboard uses `datasets/scored_players.csv` as its data source and focuses on clearly explaining model performance and errors.
+[FifaPredictionReport.pdf](https://github.com/user-attachments/files/24373446/FifaPredictionReport.pdf)
 
 ## Notebooks
 - Use the notebooks in `models/` to inspect alternative algorithms and tuning experiments.
